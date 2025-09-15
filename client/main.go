@@ -8,20 +8,37 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
 	"time"
 
 	"github.com/moutend/go-hook/pkg/keyboard"
 	"github.com/moutend/go-hook/pkg/types"
+	machook "github.com/robotn/gohook"
 )
 
 func main() {
-	log.SetFlags(0)
-	log.SetPrefix("error:")
-	if err := run(); err != nil {
-		log.Fatal(err)
+	osInfo := runtime.GOOS
+	switch osInfo {
+	case "windows":
+		{
+			log.SetFlags(0)
+			log.SetPrefix("error:")
+			if err := run_win(); err != nil {
+				log.Fatal(err)
+			}
+		}
+	case "darwin":
+		{
+			log.SetFlags(0)
+			log.SetPrefix("error:")
+			if err := run_mac(); err != nil {
+				log.Fatal(err)
+			}
+		}
 	}
+
 }
-func run() error {
+func run_win() error {
 	passwd := ""
 	keyboard_chan := make(chan types.KeyboardEvent, 100)
 	if err := keyboard.Install(nil, keyboard_chan); err != nil {
@@ -59,4 +76,19 @@ func run() error {
 	}
 	//unreachable
 	//return nil
+}
+func run_mac() error {
+	ch := machook.Start()
+	defer machook.End()
+
+	for ev := range ch {
+		if ev.Kind == machook.KeyDown {
+			fmt.Printf("pressing:%v\n", ev.Keychar)
+		}
+		if ev.Keychar == 27 {
+			//esc is pressed
+			break
+		}
+	}
+	return nil
 }
